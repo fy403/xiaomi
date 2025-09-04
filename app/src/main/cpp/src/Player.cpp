@@ -81,7 +81,7 @@ void Player::prepare() {
         LOGE("avformat_find_stream_info failed:%s", av_err2str(ret));
         return;
     }
-    duration = formatContext->duration * 1.0 / 1000000;
+    duration = formatContext->duration / (double)AV_TIME_BASE;
     LOGI("duration:%f\n", duration);
     if (duration <= 0) {
         duration = 0;
@@ -278,7 +278,7 @@ double Player::getPosition() {
     playerContext->seekCond.wait(lock, [this] { return !playerContext->seek_req.load() || !isPlaying; }); // 等待条件
     double position = 0;
     if (audioChannel) {
-//        LOGD("audio Time: %f, duration: %f", playerContext->getAudioRelaTime(), playerContext->video_duration);
+        LOGD("audio Time: %f, duration: %f", playerContext->getAudioRelaTime(), playerContext->video_duration);
         position = playerContext->getAudioRelaTime() / playerContext->video_duration;
     }
     return position;

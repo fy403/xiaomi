@@ -28,7 +28,7 @@ void VideoChannel::render() {
     }
     while (isPlaying) {
         if (isPause) {
-            cond.wait(lock);
+            cond.wait(lock, [this] { return !this->isPause; });
         }
 
         AVFrame *frame = nullptr;
@@ -83,7 +83,7 @@ void VideoChannel::handleSync(double videoClock, double frameDelay) {
     const double SYNC_MIN_THRESHOLD = 0.05;
 
     if (diff > 0) {
-        // 视频快于音频，最多加一帧延迟
+        // 视频快于音频，加一帧延迟
         av_usleep((frameDelay + std::min(diff, SYNC_THRESHOLD)) * AV_TIME_BASE);
     } else if (diff < -SYNC_THRESHOLD) {
         // 视频远慢于音频，丢弃帧

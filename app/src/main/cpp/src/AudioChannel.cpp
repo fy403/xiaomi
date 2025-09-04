@@ -137,7 +137,7 @@ int AudioChannel::resampleAudio(void **buf) {
    std::unique_lock <std::mutex> lock(mutex);
     while (isPlaying) {
         if (isPause) {
-            cond.wait(lock);
+            cond.wait(lock, [this] { return !this->isPause; });
         }
 
 //        int ret = frames.pop(frame);

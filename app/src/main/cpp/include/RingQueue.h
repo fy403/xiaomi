@@ -20,18 +20,13 @@ public:
     }
 
     void push(T new_value) {
-        std::lock_guard<std::mutex> lk(mt);
+        std::unique_lock<std::mutex> lk(mt);
         if (work) {
-            if (count < capacity) {
-                buffer[tail] = new_value;
-                tail = (tail + 1) % capacity;
-                count++;
-                cv.notify_one();
-            } else {
-                if (releaseCallback) {
-                    releaseCallback(&new_value);
-                }
-            }
+            cv.wait(lk, [this] { return count < capacity; });
+            buffer[tail] = new_value;
+            tail = (tail + 1) % capacity;
+            count++;
+            cv.notify_one();
         } else {
             if (releaseCallback) {
                 releaseCallback(&new_value);

@@ -67,7 +67,7 @@ void VideoChannel::play() {
 void VideoChannel::decode() {
     AVPacket *packet = 0;
     int target_seek_pos_avtimebase = 0;
-    bool seeking_flag = false;
+    bool abs_seeking_flag = false;
     while (isPlaying) {
         int ret = packets.pop(packet);
         if (!isPlaying) {
@@ -86,7 +86,7 @@ void VideoChannel::decode() {
             frames.setWork(1);
             target_seek_pos_avtimebase = packet->pos;
             releaseAvPacket(&packet);
-            seeking_flag = true;
+            abs_seeking_flag = true;
             LOGD("视频seeked");
             continue;
         }
@@ -108,13 +108,14 @@ void VideoChannel::decode() {
             // 失败
             break;
         }
+        // frame堆积，让出一会cpu
         while (frames.size() > 100 && isPlaying) {
             av_usleep(1000 * 10);
             continue;
         }
 
         // 精准seek
-        if (seeking_flag) {
+        if (abs_seeking_flag) {
             auto cur_frame_pts_avtimebase =
                     av_rescale_q(frame->pts, time_base, AV_TIME_BASE_Q);
             if (cur_frame_pts_avtimebase < target_seek_pos_avtimebase) {
@@ -122,7 +123,7 @@ void VideoChannel::decode() {
                 releaseAvFrame(&frame);
                 continue;
             } else {
-                seeking_flag = false;
+                abs_seeking_flag = false;
                 LOGD("视频精准seeked");
             }
         }
